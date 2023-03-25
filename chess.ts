@@ -1,10 +1,9 @@
 import {
   Board,
   Boards,
+  ChessState,
   Move,
-  Moves,
   PieceColor,
-  Pieces,
   PieceType,
 } from "./mod.ts";
 import { Arrays } from "./utils/mod.ts";
@@ -89,34 +88,15 @@ export class Chess {
    */
   next() {
     this.onMove(this.getLastMove()!);
-    this.current = Pieces.invertColor(this.current);
-    this.generateMoves();
+    ChessState.next(this);
   }
 
-  private generateMoves() {
-    if (this.gameOver) return;
-    Arrays.clear(this.validMoves);
-    const { moves, checkMate, staleMate } = Moves.generateMoves(
-      this,
-    );
-    if (checkMate) {
-      this.gameOver = true;
-      this.gameOverReason = "checkMate";
-      this.onGameOver(this.gameOverReason);
-    } else if (staleMate) {
-      this.gameOver = true;
-      this.gameOverReason = "staleMate";
-      this.onGameOver(this.gameOverReason);
-    }
-
-    this.validMoves.push(...moves);
+  generateMoves() {
+    ChessState.generateMoves(this);
   }
 
   isPromote() {
-    const lastMove = this.getLastMove();
-    if (!lastMove) return false;
-
-    return !!lastMove.promoteToType;
+    return ChessState.isPromote(this);
   }
 
   /**
@@ -125,32 +105,7 @@ export class Chess {
    * @param offset
    */
   clickTile(offset: number, force = false) {
-    if (!force) {
-      if (this.freezeOn.includes(this.current)) {
-        return "frozen";
-      }
-    }
-    const isFriendly = this.board[offset].color === this.current;
-    if (isFriendly) {
-      // select
-      this.selectedOffset = offset;
-      return "select";
-    } else if (
-      this.selectedOffset != -1 &&
-      this.validMoves[this.selectedOffset].find((move) => move.to === offset)
-    ) {
-      // move
-      const move = this.validMoves[this.selectedOffset].find((move) => {
-        return move.to === offset;
-      })!;
-      this.move(move);
-      this.selectedOffset = -1;
-      return "move";
-    }
-    // deselect
-    this.selectedOffset = -1;
-
-    return "deselect";
+    return ChessState.clickTile(this, offset, force);
   }
 
   /**
@@ -161,35 +116,11 @@ export class Chess {
    * @returns true if the move is valid
    */
   simulateClicksToMove(from: number, to: number, promoteTo?: PieceType) {
-    if (
-      !this.validMoves[from].find((move) => move.to === to)
-    ) {
-      return false;
-    }
-
-    this.clickTile(from, true);
-    this.clickTile(to, true);
-    if (promoteTo) {
-      if (!this.isPromote()) {
-        this.undo();
-        throw new Error(
-          "The move cannot be performed because the move was not supposed to be a promoting move",
-        );
-      }
-      this.promoteLastMoveTo(promoteTo);
-    }
-
-    // TODO: make a iterable version of this function so that we don't need to call the generate function over and over
-    this.current = Pieces.invertColor(this.current);
-    this.generateMoves();
-    return true;
+    return ChessState.simulateClicksToMove(this, from, to, promoteTo);
   }
 
   promoteLastMoveTo(type: PieceType) {
-    const lastMove = this.getLastMove();
-    if (!lastMove) return;
-    lastMove.promoteToType = type;
-    this.board[lastMove.to].type = type;
+    ChessState.promoteLastMoveTo(this, type);
   }
 
   getLastMove() {
@@ -197,35 +128,24 @@ export class Chess {
   }
 
   lastMoveColor() {
-    const lastMove = this.getLastMove();
-    if (!lastMove) return null;
-    return this.board[lastMove.to].color;
+    return ChessState.lastMoveColor(this);
   }
 
   move(move: Move) {
-    this.moveHistory.push(move);
-    const { capture, castle, enPassant } = Moves.move(this.board, move);
+    const { capture, castle, enPassant } = ChessState.move(this, move);
     if (capture) this.onCapture(move);
     if (castle) this.onCastle(move);
     if (enPassant) this.onEnpassant(move);
   }
 
   undo() {
-    const move = this.moveHistory.pop();
-    if (!move) return;
-    Moves.undoMove(this.board, move);
-    this.onUndo(move);
-    this.next();
+    const move = ChessState.undo(this);
+    if (move) {
+      this.onUndo(move);
+    }
   }
 
   setRole(role: "black" | "white" | "watching") {
-    Arrays.clear(this.freezeOn);
-    if (role === "black") {
-      this.freezeOn.push(PieceColor.WHITE);
-    } else if (role === "white") {
-      this.freezeOn.push(PieceColor.BLACK);
-    } else {
-      this.freezeOn.push(PieceColor.BLACK, PieceColor.WHITE);
-    }
+    ChessState.setRole(this, role);
   }
 }
