@@ -2,6 +2,7 @@ import {
   Board,
   Boards,
   Chess,
+  ChessState,
   Direction,
   Move,
   MoveLine,
@@ -267,7 +268,7 @@ export function ofKing(chess: Chess, from: number, asColor?: PieceColor) {
 }
 
 export function getEnpassantTargetOffset(chess: Chess) {
-  const move = chess.getLastMove();
+  const move = ChessState.getLastMove(chess);
 
   if (
     move &&
@@ -391,7 +392,7 @@ export function generateMoves(chess: Chess) {
     moves[offset] = [];
   }
 
-  const lastMove = chess.getLastMove();
+  const lastMove = ChessState.getLastMove(chess);
   if (attacked(chess.board, kingIndex) && lastMove) {
     lastMove.check = kingIndex;
   }
