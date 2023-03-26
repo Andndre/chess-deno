@@ -1,4 +1,4 @@
-import { Boards, Chess } from "./mod.ts";
+import { Boards, Chess, ChessState } from "./mod.ts";
 import { Arrays, Coords } from "./utils/mod.ts";
 
 const _2dOffset: number[][] = [];
@@ -72,7 +72,7 @@ export const getOverlayColor = (
   ) {
     return colorConfig.selected;
   }
-  if (offset === chess.getLastMove()?.check) {
+  if (offset === ChessState.getLastMove(chess)?.check) {
     return colorConfig.kingCheck;
   }
   return col;
