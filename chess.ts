@@ -92,7 +92,10 @@ export class Chess {
   }
 
   generateMoves() {
-    ChessState.generateMoves(this);
+    const gameover = ChessState.generateMoves(this);
+    if (gameover) {
+      this.onGameOver(this.gameOverReason);
+    }
   }
 
   isPromote() {

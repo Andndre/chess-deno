@@ -135,6 +135,7 @@ export function next(chess: Chess) {
 
 export function generateMoves(chess: Chess) {
   if (chess.gameOver) return;
+  let gameover = false;
   Arrays.clear(chess.validMoves);
   const { moves, checkMate, staleMate } = Moves.generateMoves(
     chess,
@@ -142,12 +143,12 @@ export function generateMoves(chess: Chess) {
   if (checkMate) {
     chess.gameOver = true;
     chess.gameOverReason = "checkMate";
-    chess.onGameOver(chess.gameOverReason);
+    gameover = true;
   } else if (staleMate) {
     chess.gameOver = true;
     chess.gameOverReason = "staleMate";
-    chess.onGameOver(chess.gameOverReason);
+    gameover = true;
   }
-
   chess.validMoves.push(...moves);
+  return gameover;
 }
